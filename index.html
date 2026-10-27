@@ -23,7 +23,7 @@ const socket=io({path:"/socket.io/",timeout:20000,reconnection:true,reconnection
 const colors=["#5aa9ff","#ff6868","#65d79a","#ffd064","#c78aff","#ff9d52","#5de0d5","#eee"];
 function screen(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("show"));$(id).classList.add("show")}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function emitAck(event,data){return new Promise(resolve=>socket.emit(event,data||{},resolve))}
+function emitAck(event,data){return new Promise(resolve=>socket.emit(event,data===undefined?{}:data,resolve))}
 socket.on("connect",()=>{$("conn").textContent="서버 연결됨";myId=socket.id;socket.emit("rooms:list:request")});
 socket.on("disconnect",()=>{$("conn").textContent="연결 끊김 · 재연결 중…"});socket.on("connect_error",()=>{$("conn").textContent="서버 연결 재시도 중…"});
 $("home").onclick=()=>screen("lobby");$("showCreate").onclick=()=>$("createForm").classList.toggle("hidden");$("refresh").onclick=()=>socket.emit("rooms:list:request");
