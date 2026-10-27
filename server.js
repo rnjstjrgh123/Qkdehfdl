@@ -52,9 +52,23 @@ function nextTurn(r) {
   r.state.turnIndex=(r.state.turnIndex+1)%r.state.players.length;
 }
 function rollResult(player) {
-  const rolls=[{name:"도",value:1},{name:"개",value:2},{name:"개",value:2},{name:"걸",value:3},{name:"걸",value:3},{name:"윷",value:4},{name:"모",value:5},{name:"빽도",value:-1}];
-  if(player && player.augment === "fortune") rolls.push({name:"윷",value:4},{name:"모",value:5});
-  return rolls[Math.floor(Math.random()*rolls.length)];
+  // 각 윷의 앞/뒤 면을 먼저 굴리고, 보이는 면의 개수로 결과를 계산합니다.
+  // sides[i] === true 는 평평한 앞면, false 는 둥근 뒷면입니다.
+  const toss = () => Array.from({length:4}, () => Math.random() < 0.5);
+  let sides = toss();
+  let count = sides.filter(Boolean).length;
+  // 행운 증강은 윷/모가 아니면 일정 확률로 한 번 더 굴려 보너스를 줍니다.
+  if (player && player.augment === "fortune" && count !== 0 && count !== 4 && Math.random() < 0.18) {
+    sides = toss(); count = sides.filter(Boolean).length;
+  }
+  let result;
+  if (count === 0) result = {name:"모", value:5};
+  else if (count === 4) result = {name:"윷", value:4};
+  else if (count === 1 && sides[0]) result = {name:"빽도", value:-1};
+  else if (count === 1) result = {name:"도", value:1};
+  else if (count === 2) result = {name:"개", value:2};
+  else result = {name:"걸", value:3};
+  return {...result, sides};
 }
 const safeAck = ack => (typeof ack === "function" ? ack : () => {});
 io.on("connection", socket => {
