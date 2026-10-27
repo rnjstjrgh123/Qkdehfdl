@@ -172,7 +172,7 @@ io.on("connection", socket => {
     if(r.state.extraRolls>0) r.state.extraRolls--;
     const result=rollResult(p);
     r.state.lastRoll=result;
-    const hasBoardPiece=p.pieces.some(pos=>pos!==null && pos<20);
+    const hasBoardPiece=p.pieces.some(pos=>pos!==null && pos<10);
     if(result.name==="빽도" && !hasBoardPiece) {
       // No active piece can use back-do: consume it and immediately pass the turn.
       r.state.pending=[];
@@ -214,17 +214,17 @@ io.on("connection", socket => {
     if(!res) return ack({ok:false,error:"먼저 이동할 결과를 선택하세요."});
     if(!Number.isInteger(idx)||idx<0||idx>=p.pieces.length) return ack({ok:false,error:"말 선택이 올바르지 않습니다."});
     const old=p.pieces[idx];
-    if(old!==null && old>=21) return ack({ok:false,error:"이미 완주한 말입니다."});
-    if(old===20 && res.value<0) return ack({ok:false,error:"도착 지점에 대기 중인 말은 빽도로 이동할 수 없습니다."});
+    if(old!==null && old>=11) return ack({ok:false,error:"이미 완주한 말입니다."});
+    if(old===10 && res.value<0) return ack({ok:false,error:"도착 지점에 대기 중인 말은 빽도로 이동할 수 없습니다."});
     if(res.value<0 && old===null) return ack({ok:false,error:"빽도는 출발한 말이 있어야 사용할 수 있습니다."});
 
     // 같은 칸에 업혀 있는 내 말은 하나를 선택해도 한 무리로 함께 이동합니다.
     const movingIndices = old === null ? [idx] : p.pieces
-      .map((pos, i) => pos === old && pos <= 20 ? i : -1)
+      .map((pos, i) => pos === old && pos <= 10 ? i : -1)
       .filter(i => i >= 0);
     let target = old === null ? Math.max(0, res.value - 1) : old + res.value;
-    // 빽도로 첫 칸(pos 0)에서 이동하면 빨간 도착 지점(pos 20)에 도착 대기합니다.
-    if(old === 0 && res.value < 0) target = 20;
+    // 빽도로 첫 칸(pos 0)에서 이동하면 도착 지점(pos 10)에 도착 대기합니다.
+    if(old === 0 && res.value < 0) target = 10;
     const launched = old === null;
     if(p.augment==="swift" && !p.augmentUsed && res.value>0 && (old===null || old===0)) {
       target+=1; p.augmentUsed=true; logState(r,`${p.name}의 증강 [질주] 발동: 한 칸 추가 이동!`);
@@ -233,11 +233,11 @@ io.on("connection", socket => {
     if(target < 0) {
       movingIndices.forEach(i => { p.pieces[i] = null; });
       logState(r, `${p.name}의 말 무리가 빽도로 출발점 뒤로 돌아갔습니다.`);
-    } else if(target>20) {
-      movingIndices.forEach(i => { p.pieces[i]=21; p.finished++; });
+    } else if(target>10) {
+      movingIndices.forEach(i => { p.pieces[i]=11; p.finished++; });
       logState(r,`${p.name}의 말 ${movingIndices.map(i=>i+1).join(", ")} 완주!`);
-    } else if(target===20) {
-      movingIndices.forEach(i => { p.pieces[i]=20; });
+    } else if(target===10) {
+      movingIndices.forEach(i => { p.pieces[i]=10; });
       logState(r,`${p.name}의 말 ${movingIndices.map(i=>i+1).join(", ")}이 도착 지점에 도착했습니다. 다음 차례에 한 번 더 움직이면 완주합니다.`);
     } else {
       movingIndices.forEach(i => { p.pieces[i]=target; });
@@ -246,7 +246,7 @@ io.on("connection", socket => {
     }
 
     let captured=false;
-    if(target>=0 && target<20) {
+    if(target>=0 && target<10) {
       const landed=target;
       r.state.players.forEach(other=>{
         if(other.id===p.id) return;
