@@ -211,18 +211,32 @@ io.on("connection", socket => {
     const old=p.pieces[idx];
     if(old!==null && old>=19) return ack({ok:false,error:"이미 완주한 말입니다."});
     if(res.value<0 && old===null) return ack({ok:false,error:"빽도는 출발한 말이 있어야 사용할 수 있습니다."});
-    let target=old===null ? Math.max(0,res.value-1) : old+res.value;
+
+    // 같은 칸에 업혀 있는 내 말은 하나를 선택해도 한 무리로 함께 이동합니다.
+    const movingIndices = old === null ? [idx] : p.pieces
+      .map((pos, i) => pos === old && pos < 19 ? i : -1)
+      .filter(i => i >= 0);
+    let target = old === null ? Math.max(0, res.value - 1) : old + res.value;
     const launched = old === null;
     if(p.augment==="swift" && !p.augmentUsed && res.value>0 && (old===null || old===0)) {
       target+=1; p.augmentUsed=true; logState(r,`${p.name}의 증강 [질주] 발동: 한 칸 추가 이동!`);
     }
-    if(target>=19) { p.pieces[idx]=19; p.finished++; logState(r,`${p.name}의 말 ${idx+1} 완주!`); }
-    else p.pieces[idx]=Math.max(0,target);
-    if (launched) logState(r, `${p.name}의 말 ${idx+1}을 출발점에 놓았습니다.`);
+    // 빽도로 출발점보다 뒤로 가면 해당 말 무리는 판에서 내려옵니다.
+    if(target < 0) {
+      movingIndices.forEach(i => { p.pieces[i] = null; });
+      logState(r, `${p.name}의 말 무리가 빽도로 출발점 뒤로 돌아갔습니다.`);
+    } else if(target>=19) {
+      movingIndices.forEach(i => { p.pieces[i]=19; p.finished++; });
+      logState(r,`${p.name}의 말 ${movingIndices.map(i=>i+1).join(", ")} 완주!`);
+    } else {
+      movingIndices.forEach(i => { p.pieces[i]=target; });
+      if(launched) logState(r, `${p.name}의 말 ${idx+1}을 출발시켰습니다.`);
+      if(movingIndices.length>1) logState(r,`말 업기 유지: ${movingIndices.length}개 말이 함께 이동했습니다.`);
+    }
 
     let captured=false;
-    if(p.pieces[idx]!==19) {
-      const landed=p.pieces[idx];
+    if(target>=0 && target<19) {
+      const landed=target;
       r.state.players.forEach(other=>{
         if(other.id===p.id) return;
         other.pieces=other.pieces.map(pos=>{
@@ -230,7 +244,7 @@ io.on("connection", socket => {
           if(other.augment==="guardian" && !other.shieldUsed) {
             other.shieldUsed=true; logState(r,`${other.name}의 증강 [수호 부적]이 포획을 막았습니다!`); return pos;
           }
-          captured=true; logState(r,`${p.name}이 ${other.name}의 말을 잡았습니다!`); return null;
+          captured=true; logState(r,`${p.name}이 ${other.name}의 말 무리를 잡았습니다!`); return null;
         });
       });
       const stack=p.pieces.filter(pos=>pos===landed).length;
