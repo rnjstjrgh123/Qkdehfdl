@@ -1,16 +1,15 @@
-# Augment Yutnori Online
+# Augment Yutnori Online — player-color and piece movement visibility fix
 
-## 실행
-- Node.js 18 이상
-- `npm install`
-- `npm start`
+## Files to update on GitHub
+- `server.js`
+- `public/index.html`
 
-## 이번 업데이트
-- 말이 보드 위에 색깔 토큰과 번호로 표시됩니다.
-- 결과를 선택한 뒤 오른쪽 말 버튼 또는 보드 위의 내 말을 눌러 이동할 수 있습니다.
-- 같은 칸에 있는 자기 말들은 한 말을 선택하면 함께 이동합니다(업기).
-- 이동한 칸에 상대 말이 있으면 상대 말이 잡혀 출발 상태로 돌아갑니다.
-- 빽도는 첫 칸에서 출발점 밖으로 한 칸 되돌아가며, 업힌 말은 함께 되돌아갑니다.
-- 말 완주 수, 포획, 업기 및 이동 결과는 서버가 관리해 모든 온라인 참가자에게 동기화됩니다.
+Keep `package.json`, `package-lock.json`, and `public/augment-picker.html` as they are.
 
-배포 시 `server.js`와 `public/index.html`을 함께 업데이트하세요. 루트 `index.html`도 동일한 사본으로 유지했습니다.
+## Changes
+- Player colors are assigned in turn order: 1 blue, 2 red, 3 yellow, 4 green, then purple/orange/cyan/white.
+- Board pieces are larger and the current player's movable pieces glow after a result is selected.
+- Player piece dots use their player's unique color.
+- `game:choose-result` and `game:move` acknowledgements include the authoritative server state. The client applies that state immediately after a successful action so the visible board does not depend on the order in which the Socket.IO acknowledgement and broadcast arrive.
+
+JavaScript syntax checked. The app has not been verified in a live Render multiplayer session.

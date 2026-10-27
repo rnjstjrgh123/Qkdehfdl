@@ -33,7 +33,7 @@ function initState(r) {
   return {
     turnIndex:0, pending:[], currentResult:null, extraRolls:0, gameOver:false, winner:null,
     players:r.players.map((p,i)=>({
-      id:p.id,name:p.name,color:["#5aa9ff","#ff6868","#65d79a","#ffd064","#c78aff","#ff9d52","#5de0d5","#eee"][i],
+      id:p.id,name:p.name,color:["#2788ff","#ff4141","#ffd52a","#37d86b","#b56cff","#ff8a32","#27d6d6","#f5f5f5"][i],
       pieces:Array(r.pieceCount).fill(null), finished:0, augment:p.augment||null, augmentUsed:false, shieldUsed:false
     })),
     lastRoll:null, log:[`${r.name} 방이 시작되었습니다.`]
@@ -195,7 +195,7 @@ io.on("connection", socket => {
     const i=Number(index);
     if(!Number.isInteger(i)||i<0||i>=r.state.pending.length) return ack({ok:false,error:"결과 선택이 올바르지 않습니다."});
     r.state.currentResult=r.state.pending.splice(i,1)[0];
-    broadcastGame(r); ack({ok:true,result:r.state.currentResult});
+    broadcastGame(r); ack({ok:true,result:r.state.currentResult,state:r.state});
   });
 
   socket.on("game:move", (pieceIndex, ack) => {
@@ -263,7 +263,7 @@ io.on("connection", socket => {
     } else if(!r.state.pending.length) {
       logState(r,`${p.name} 추가 던지기 차례 (${r.state.extraRolls}회 남음)`);
     }
-    broadcastGame(r); ack({ok:true});
+    broadcastGame(r); ack({ok:true,state:r.state});
   });
 
   socket.on("game:end-turn", (_data, ack) => {
