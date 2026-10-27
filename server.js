@@ -6,7 +6,12 @@ const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: { origin: "*" },
+  pingInterval: 25000,
+  pingTimeout: 60000,
+  connectTimeout: 30000
+});
 const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
@@ -259,7 +264,7 @@ io.on("connection", socket => {
     if(p.finished>=p.pieces.length) {
       r.state.gameOver=true; r.state.winner=p.name; logState(r,`${p.name} 승리!`);
     } else if(!r.state.pending.length && r.state.extraRolls===0) {
-      nextTurn(); logState(r,`${currentPlayer(r).name} 차례`);
+      nextTurn(r); logState(r,`${currentPlayer(r).name} 차례`);
     } else if(!r.state.pending.length) {
       logState(r,`${p.name} 추가 던지기 차례 (${r.state.extraRolls}회 남음)`);
     }
@@ -274,7 +279,7 @@ io.on("connection", socket => {
     if(currentPlayer(r).id!==socket.id) return ack({ok:false,error:"현재 차례가 아닙니다."});
     if(r.state.currentResult || r.state.pending.length) return ack({ok:false,error:"나온 윷 결과를 먼저 사용하세요."});
     if(r.state.extraRolls>0) return ack({ok:false,error:`추가 던지기 ${r.state.extraRolls}회가 남아 있어 턴을 종료할 수 없습니다.`});
-    nextTurn(); logState(r,`${currentPlayer(r).name} 차례`);
+    nextTurn(r); logState(r,`${currentPlayer(r).name} 차례`);
     broadcastGame(r); ack({ok:true});
   });
 

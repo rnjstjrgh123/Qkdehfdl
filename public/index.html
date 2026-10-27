@@ -23,9 +23,15 @@ const socket=io({path:"/socket.io/",timeout:20000,reconnection:true,reconnection
 const colors=["#2788ff","#ff4141","#ffd52a","#37d86b","#b56cff","#ff8a32","#27d6d6","#f5f5f5"];
 function screen(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("show"));$(id).classList.add("show")}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function emitAck(event,data){return new Promise(resolve=>socket.emit(event,data===undefined?{}:data,resolve))}
+function emitAck(event,data){return new Promise(resolve=>{
+ let settled=false;
+ const finish=result=>{if(settled)return;settled=true;clearTimeout(timer);resolve(result)};
+ if(!socket.connected){finish({ok:false,error:"서버 연결이 끊겼습니다. 잠시 후 다시 시도하세요."});return;}
+ const timer=setTimeout(()=>finish({ok:false,error:"서버 응답이 없습니다. 연결 상태를 확인하고 다시 시도하세요."}),12000);
+ try{socket.emit(event,data===undefined?{}:data,finish)}catch(e){finish({ok:false,error:"요청을 보내지 못했습니다. 페이지를 새로고침해 주세요."})}
+ })}
 socket.on("connect",()=>{$("conn").textContent="서버 연결됨";myId=socket.id;socket.emit("rooms:list:request")});
-socket.on("disconnect",()=>{$("conn").textContent="연결 끊김 · 재연결 중…"});socket.on("connect_error",()=>{$("conn").textContent="서버 연결 재시도 중…"});
+socket.on("disconnect",()=>{$("conn").textContent="연결 끊김 · 재연결 중…"});socket.on("connect_error",()=>{$("conn").textContent="서버 연결 재시도 중…"});window.addEventListener("pageshow",()=>{if(!socket.connected)socket.connect()});
 $("home").onclick=()=>screen("lobby");$("showCreate").onclick=()=>$("createForm").classList.toggle("hidden");$("refresh").onclick=()=>socket.emit("rooms:list:request");
 $("create").onclick=async()=>{let r=await emitAck("room:create",{playerName:$("nickname").value,name:$("roomName").value,mode:$("mode").value,maxPlayers:+$("maxPlayers").value,pieceCount:+$("pieceCount").value,privacy:$("privacy").value,password:$("password").value});if(!r.ok)return alert(r.error);enterRoom(r)};
 function enterRoom(r){myRoom=r.room;myState=r.state;isHost=myRoom.players.some(p=>p.id===myId&&p.host);renderRoom();screen("waiting")}
@@ -69,7 +75,7 @@ function renderPieces(){
  const active=myState.players[myState.turnIndex];
  myState.players.forEach((p,pi)=>p.pieces.forEach((pos,idx)=>{
    if(pos===null||pos>=19)return;
-   const pt=outer[(15+Math.max(0,pos))%outer.length];
+   const pt=outer[(15-Math.max(0,pos)+outer.length)%outer.length];
    const same=p.pieces.map((x,i)=>x===pos?i:-1).filter(i=>i>=0);
    const slot=same.indexOf(idx), angle=(slot/same.length)*Math.PI*2;
    const spread=same.length>1?12:0;
