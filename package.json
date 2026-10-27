@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "node tests/augment-flow.test.js"
+    "test": "node tests/augment-flow.test.js && node tests/route-branching.test.js"
   },
   "dependencies": {
     "express": "^4.21.2",
